@@ -1,0 +1,48 @@
+import random
+from Crypto.Cipher import DES
+
+def sezar(text, shift):
+    result = ""
+    for i in range(len(text)):
+        char = text[i]
+        if char.isalpha():
+            if char.isupper():
+                result += chr((ord(char) + shift - 65) % 26 + 65)
+            else:
+                result += chr((ord(char) + shift - 97) % 26 + 97)
+        else:
+            result += char
+    return result
+
+def vernam(text):
+    key = ''.join([chr(random.randint(0, 255)) for i in range(len(text))])
+    encrypted = ''.join([chr(ord(text[i]) ^ ord(key[i])) for i in range(len(text))])
+    return encrypted, key
+
+def des_encrypt(key, text):
+    des = DES.new(key, DES.MODE_ECB)
+    padded_text = text + ' ' * (8 - len(text) % 8) # add padding
+    encrypted = des.encrypt(padded_text.encode())
+    return encrypted
+
+def encrypt(text):
+    shift = 5
+    sezar_encrypted = sezar(text, shift)
+    vernam_encrypted, key = vernam(sezar_encrypted)
+    des_key = key[:8].encode()
+    des_encrypted = des_encrypt(des_key, vernam_encrypted)
+    return des_encrypted
+
+def decrypt(encrypted_text, key):
+    des_key = key[:8].encode()
+    des = DES.new(des_key, DES.MODE_ECB)
+    vernam_decrypted = des.decrypt(encrypted_text)
+    sezar_decrypted = sezar(vernam_decrypted.decode(), -5)
+    return sezar_decrypted
+
+text = "Gaziantep"
+encrypted = encrypt(text)
+print("Encrypted:", encrypted)
+key = vernam(text)[1]
+decrypted = decrypt(encrypted, key)
+print("Decrypted:", decrypted)
